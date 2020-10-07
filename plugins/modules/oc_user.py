@@ -95,6 +95,42 @@ import xml.etree.ElementTree as ET
 from ansible.module_utils.basic import AnsibleModule
 
 
+def _run_occ_cmd(module, cmd, chdir, out, err, commands, cmd_env=None):
+  rc, out_occ, err_occ = module.run_command(cmd, cwd=chdir, environ_update=cmd_env or {})
+  out += out_occ
+  err += err_occ
+  if rc != 0:
+      _fail(module, cmd, out_occ, err_occ)
+  else:
+      commands.append(cmd)
+  return (out, err, out_occ, err_occ)
+
+def _get_group_modifications(occ, module, chdir, name, groups, user_info):
+  err = ''
+  out = ''
+
+  cmd = [occ] + ['group:list', '--output', 'json']
+  rc, out_occ, err_occ = module.run_command(cmd, cwd=chdir)
+  out += out_occ
+  err += err_occ
+
+  if rc != 0:
+    _fail(module, cmd, out, err)
+
+  existing_groups = set(json.loads(out_occ))
+  target_groups = set(groups)
+  current_groups = set(user_info['groups'])
+
+  # add all groups that are not yet assigned to the user
+  add_groups = target_groups - current_groups
+  # remove all groups they are currently assigned to that are not part of the new group list
+  remove_groups = current_groups - target_groups  
+  # create all new groups that do not exist on the system
+  create_groups = add_groups - existing_groups
+
+  return (add_groups, remove_groups, create_groups)
+
+
 def _get_user_info(occ, module, chdir, name):
     err = ''
     out = ''
@@ -116,7 +152,22 @@ def _get_user_info(occ, module, chdir, name):
         return {}
 
     # return empty dict if our specifc user does not exist
-    return json_out.get(name, {})
+    user_info = json_out.get(name, {})
+
+    # only get groups if the user exists
+    if user_info:
+      cmd = [occ] + ['user:list-groups', '--output', 'json', name]
+      rc, out_occ, err_occ = module.run_command(cmd, cwd=chdir)
+      out += out_occ
+      err += err_occ
+
+      if rc != 0:
+          _fail(module, cmd, out, err)
+      
+      user_groups = json.loads(out_occ)
+      user_info['groups'] = user_groups
+
+    return user_info
 
 def _get_occ(module, executable=None):
     candidate_occ_basenames = ('occ',)
@@ -220,6 +271,9 @@ def main():
     modify_cmd = [occ] + ["user:modify", name]
     dis_enable_cmd = [occ] + dis_enable_map[enable]
     pw_reset_cmd = [occ] + ["user:resetpassword", "--password-from-env"]
+    group_add_cmd = [occ] + ["group:add-member"]
+    group_del_cmd = [occ] + ["group:remove-member"]
+    group_create_cmd = [occ] + ["group:add"]
     
 
     if run_cmd:
@@ -250,70 +304,63 @@ def main():
 
         cmd.append(name)
 
-        rc, out_occ, err_occ = module.run_command(cmd, cwd=chdir, environ_update=cmd_env)
-        out += out_occ
-        err += err_occ
-        if rc != 0:
-            _fail(module, cmd, out_occ, err_occ)
-        else:
-            changed += out_occ
-            commands.append(cmd)
+        (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands, cmd_env)
+        changed += out_occ
 
-    if run_modify_display_name:
-        cmd = modify_cmd+["displayname", display_name]
-        rc, out_occ, err_occ = module.run_command(cmd, cwd=chdir)
-        out += out_occ
-        err += err_occ
-        if rc != 0:
-            _fail(module, cmd, out_occ, err_occ)
-        else:
+    if state == "present":
+        if run_modify_display_name:
+            cmd = modify_cmd+["displayname", display_name]
+            (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
             changed += out_occ
-            commands.append(cmd)
-    
-    if run_modify_email:
-        cmd = modify_cmd+["email", email]
-        rc, out_occ, err_occ = module.run_command(cmd, cwd=chdir)
-        out += out_occ
-        err += err_occ
-        if rc != 0:
-            _fail(module, cmd, out_occ, err_occ)
-        else:
+        
+        if run_modify_email:
+            cmd = modify_cmd+["email", email]
+            (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
             changed += out_occ
-            commands.append(cmd)
 
-    if run_dis_enable:
-        cmd = dis_enable_cmd + [name]
-        rc, out_occ, err_occ = module.run_command(cmd, cwd=chdir)
-        out += out_occ
-        err += err_occ
-        if rc != 0:
-            _fail(module, cmd, out_occ, err_occ)
-        else:
+        if run_dis_enable:
+            cmd = dis_enable_cmd + [name]
+            (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
             changed += name+" has been "
             changed += "enabled\n" if enable else "disabled\n"
-            commands.append(cmd)
-        
-    if user_exists and force_password:
-        if password is not None:
-          cmd_env = { 'OC_PASS': password }
-          cmd = pw_reset_cmd + [name]
-          rc, out_occ, err_occ = module.run_command(cmd, cwd=chdir, environ_update=cmd_env)
-          out += out_occ
-          err += err_occ
-          if rc != 0:
-              _fail(module, cmd, out_occ, err_occ)
-          else:
+            
+        if user_exists:
+            if force_password:
+                if password is not None:
+                  cmd_env = { 'OC_PASS': password }
+                  cmd = pw_reset_cmd + [name]
+                  (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands, cmd_env)
+                  changed += out_occ
+                else:
+                  module.fail_json(
+                      user=name,
+                      msg=["Password is required when force_password is active!"],
+                    )
+
+            (add_groups, remove_groups, create_groups) = _get_group_modifications(occ, module, chdir, name, groups, user_info)
+
+            # create new groups that do not exist yet
+            for group in create_groups:
+              cmd = group_create_cmd + [group]
+              (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
               changed += out_occ
-              commands.append(cmd)
-        else:
-          module.fail_json(
-              user=name,
-              msg=["Password is required when force_password is active!"],
-            )
+
+            # add user to all new groups
+            for group in add_groups:
+              cmd = group_add_cmd + [group, "--member", name]
+              (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
+              changed += out_occ
+
+            # remove user from groups they no longer are supposed to be in
+            for group in remove_groups:
+              cmd = group_del_cmd + [group, "--member", name]
+              (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
+              changed += out_occ
 
 
     module.exit_json(changed=changed, commands=commands, name=name, state=state,
                      stdout=out, stderr=err)
+
 
 
 if __name__ == '__main__':
