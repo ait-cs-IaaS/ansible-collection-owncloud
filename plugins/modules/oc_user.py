@@ -23,6 +23,7 @@ options:
     description:
       - The uid of the users to be configured.
     type: str
+    required: True
     aliases: ['username']
   state:
     description:
@@ -216,7 +217,7 @@ def main():
     argument_spec = dict()
     argument_spec.update(
         state=dict(type='str', default='present', choices=state_map.keys()),
-        name=dict(type='str', aliases=['username'], no_log=False),
+        name=dict(type='str', aliases=['username'], no_log=False, required=True),
         enabled=dict(type='bool', default=True),
         display_name=dict(type='str', aliases=['displayName']),
         email=dict(type='str'),
@@ -229,8 +230,9 @@ def main():
 
     module = AnsibleModule(
         argument_spec=argument_spec,
-        required_one_of=[['name']],
-        mutually_exclusive=[['name']],
+        required_if=[
+          ["force_password", True, ["password"]]
+        ],
         supports_check_mode=False,
     )
 
