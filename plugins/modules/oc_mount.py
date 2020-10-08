@@ -36,7 +36,7 @@ options:
     required: True
   user:
     description:
-      - The uid of the user used for a personal mount. For a admin mount omit this option.
+      - The uid of the user used for a personal mount. For a admin mount, that can be assigned to multiple users and groups, omit this option.
       - Mutually exclusive with C(users) and C(groups).
     type: str
     aliases: ['username']
@@ -59,11 +59,16 @@ options:
     description:
       - The authentication backed to use for the mount.
     type: str
-    choices: [sessioncredentials, none, password, oauth2, publickey]
+    choices: [sessioncredentials, password, oauth2, publickey]
     required: True
   storage_backend:
     description:
       - The storage backed to use for the mount.
+      - C(dav) supports authentication backends C(sessioncredentials), C(password)
+      - C(owncloud) supports authentication backends C(sessioncredentials), C(password)
+      - C(sftp) supports authentication backends  C(sessioncredentials), C(password), C(publickey)
+      - C(googledrive) supports authentication backend C(oauth2)
+      - C(smb) supports authentication backends C(sessioncredentials), C(password)
     type: str
     choices: [dav, owncloud, sftp, googledrive, smb]
     required: True
