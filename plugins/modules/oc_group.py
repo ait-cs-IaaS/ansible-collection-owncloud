@@ -68,10 +68,23 @@ EXAMPLES = '''
 
 RETURN = '''
 name:
-  description: name the user added to ownCloud
+  description: name of the group added or removed
   returned: success
   type: str
-  sample: 'alice'
+  sample: 'finance'
+users:
+  description: list of users part of the group
+  returned: success
+  type: list
+  sample: 
+    - bob 
+    - alice
+commands:
+  description: list of occ commands used to modify the group
+  returned: success
+  type: list
+  sample: 
+    - '["occ", "group:add-member", "--member", "alice", "admin"]'
 '''
 
 
