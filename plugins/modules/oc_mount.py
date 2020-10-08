@@ -319,19 +319,6 @@ storage_backends = {
     }
 }
 
-
-def _run_occ_cmd(module, cmd, chdir, out, err, commands, cmd_env=None):
-    rc, out_occ, err_occ = module.run_command(
-        cmd, cwd=chdir, environ_update=cmd_env or {})
-    out += out_occ
-    err += err_occ
-    if rc != 0:
-        _fail(module, cmd, out_occ, err_occ)
-    else:
-        commands.append(cmd)
-    return (out, err, out_occ, err_occ)
-
-
 def _get_mount_info(occ, module, chdir, name, user):
     cmd = [occ] + ['files_external:list', '--no-warnings', '--full',
                    '-i', '--mount-options',
