@@ -43,6 +43,8 @@
     dav_config: "{{ item.dav_config | default(omit) }}"
     owncloud_config: "{{ item.owncloud_config | default(omit) }}"
     sftp_config: "{{ item.sftp_config | default(omit) }}"
+    smb_config: "{{ item.smb_config | default(omit) }}"
+    local_config: "{{ item.local_config | default(omit) }}"
     # auth user/password for password/publickey auth
     authentication_user: "{{ item.authentication_user | default(omit) }}"
     authentication_password: "{{ item.authentication_password | default(omit) }}"
