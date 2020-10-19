@@ -1,0 +1,17 @@
+---
+# vars file for owncloud-config
+
+# global configuration options
+owncloud_users_force_password: False
+# owncloud_chdir: <some directory>
+# owncloud_executable: occ
+
+# user & group configuration 
+# (membership is controlled as part of the user configuration)
+owncloud_groups: "{{ owncloud_groups_group + owncloud_groups_host }}"
+owncloud_users: "{{ owncloud_users_group + owncloud_users_host }}"
+
+# remote filesystem mounts
+owncloud_mounts: "{{ owncloud_mounts_group + owncloud_mounts_host }}"
+# global owncloud mount options can be configured like this 
+# owncloud_mount_options: { read_only: True }

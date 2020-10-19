@@ -1,0 +1,12 @@
+---
+# defaults file for owncloud-config
+
+# user & group configuration
+owncloud_groups_group: []
+owncloud_groups_host: []
+owncloud_users_group: []
+owncloud_users_host: []
+
+# remote filesystem mounts
+owncloud_mounts_group: []
+owncloud_mounts_host: []
