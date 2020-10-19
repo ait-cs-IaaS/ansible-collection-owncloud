@@ -221,7 +221,7 @@ def main():
         enabled=dict(type='bool', default=True),
         display_name=dict(type='str', aliases=['displayName']),
         email=dict(type='str'),
-        groups=dict(type='list'),
+        groups=dict(type='list', default=None),
         password=dict(type='str', no_log=True),
         force_password=dict(type='bool', default=False, no_log=False),
         chdir=dict(type='path'),
@@ -339,25 +339,26 @@ def main():
                       msg=["Password is required when force_password is active!"],
                     )
 
-            (add_groups, remove_groups, create_groups) = _get_group_modifications(occ, module, chdir, name, groups, user_info)
+            if groups is not None:
+              (add_groups, remove_groups, create_groups) = _get_group_modifications(occ, module, chdir, name, groups, user_info)
 
-            # create new groups that do not exist yet
-            for group in create_groups:
-              cmd = group_create_cmd + [group]
-              (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
-              changed += out_occ
+              # create new groups that do not exist yet
+              for group in create_groups:
+                cmd = group_create_cmd + [group]
+                (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
+                changed += out_occ
 
-            # add user to all new groups
-            for group in add_groups:
-              cmd = group_add_cmd + [group, "--member", name]
-              (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
-              changed += out_occ
+              # add user to all new groups
+              for group in add_groups:
+                cmd = group_add_cmd + [group, "--member", name]
+                (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
+                changed += out_occ
 
-            # remove user from groups they no longer are supposed to be in
-            for group in remove_groups:
-              cmd = group_del_cmd + [group, "--member", name]
-              (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
-              changed += out_occ
+              # remove user from groups they no longer are supposed to be in
+              for group in remove_groups:
+                cmd = group_del_cmd + [group, "--member", name]
+                (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
+                changed += out_occ
 
 
     module.exit_json(changed=changed, commands=commands, name=name, state=state,
