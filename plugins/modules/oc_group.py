@@ -158,7 +158,7 @@ def _remove_group(occ, module, chdir, group, users, group_info):
     commands = []
 
     # only need to delete if it actually exists
-    if group_info:
+    if group_info is not None:
       cmd = [occ] + ['group:delete', group]
 
       rc, out_occ, err_occ = module.run_command(cmd, cwd=chdir)
@@ -184,7 +184,7 @@ def _update_group(occ, module, chdir, group, users, group_info):
     users_to_remove = []
     
     # check if we have to remove or add users to existing group
-    if group_info:
+    if group_info is not None:
         # we only modify users if the ansible option is passed
         if users is not None:
             target_users_set = set(users)
