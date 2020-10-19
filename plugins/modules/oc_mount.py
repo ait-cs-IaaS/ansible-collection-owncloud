@@ -59,7 +59,7 @@ options:
     description:
       - The authentication backed to use for the mount.
     type: str
-    choices: [sessioncredentials, password, oauth2, publickey]
+    choices: [sessioncredentials, password, oauth2, publickey, none]
     required: True
   storage_backend:
     description:
@@ -69,8 +69,9 @@ options:
       - C(sftp) supports authentication backends  C(sessioncredentials), C(password), C(publickey)
       - C(googledrive) supports authentication backend C(oauth2)
       - C(smb) supports authentication backends C(sessioncredentials), C(password)
+      - C(local) support mounting from the local file system (*only for admin mounts!*)
     type: str
-    choices: [dav, owncloud, sftp, googledrive, smb]
+    choices: [dav, owncloud, sftp, googledrive, smb, local]
     required: True
   dav_config:
     description:
@@ -146,6 +147,15 @@ options:
       description:
         - The domain to use for the SMB / CIFS share.
       type: str
+  local_config:
+    description:
+      - The local backend configuration options
+    type: dict
+    datadir:
+      description:
+        - The local directory to mount
+      type: str
+      required: True
   options:
     description:
       - The general mount options.
@@ -262,6 +272,10 @@ authentication_backends = {
             'authentication_user': 'user',
             'private_key': 'public_key'
         }
+    },
+    'none': {
+      'identifier': 'null::null',
+      'configuration': {}
     }
 }
 
@@ -316,6 +330,15 @@ storage_backends = {
         'supported_authentication_backends': [
             'oauth2::oauth2'
         ]
+    },
+    'local': {
+      'name': 'Local',
+      'identifier': 'local',
+      'configuration': 'local_config',
+      'storage_class': '\\OC\\Files\\Storage\\Local',
+      'supported_authentication_backends': [
+        'null::null'
+      ]
     }
 }
 
@@ -673,6 +696,10 @@ def main():
             root=dict(type='str'),
             domain=dict(type='str')
         ),
+        local_config=dict(
+            type='dict',
+            datadir=dict(type='str', required=True)
+        ),
         authentication_user=dict(type='str'),
         authentication_password=dict(type='str', no_log=True),
         oauth2_client_id=dict(type='str', no_log=True),
@@ -705,17 +732,19 @@ def main():
             ['storage_backend', 'owncloud', ['owncloud_config']],
             ['storage_backend', 'sftp', ['sftp_config']],
             ['storage_backend', 'smb', ['smb_config']],
+            ['storage_backend', 'local', ['local_config']],
         ],
         mutually_exclusive=[
             ['user', 'users'],
             ['user', 'groups'],
+            ['user', 'local_config'], # local backend cannot be used for user mounts
             [
                 'dav_config',
                 'owncloud_config',
                 'sftp_config',
-                'smb_config'
+                'smb_config',
+                'local_config'
             ],
-            ['']
         ],
         supports_check_mode=False,
     )
