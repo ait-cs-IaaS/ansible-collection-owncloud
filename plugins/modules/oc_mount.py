@@ -379,15 +379,14 @@ def _get_mount_info(occ, module, chdir, name, user):
 
     # older owncloud versions do not support the -i option (importable format) for the occ files_external:list command
     # so we have to do some parsing to convert the output to more useful types
-
-    # convert group and user comma seperated lists to actual lists
-    # we need to strip empty strings since split returns [''] for ''
-    mount_info['applicable_users'] = list(filter(None, mount_info['applicable_users'].split(', ')))
-    mount_info['applicable_groups'] = list(filter(None, mount_info['applicable_groups'].split(', ')))
-
-    # the options and configuration fields are returned as string with comma separeted `key: val` fields
-    # (note the options field is returned in this format even with -i active)
     if mount_info is not None:
+        # convert group and user comma seperated lists to actual lists
+        # we need to strip empty strings since split returns [''] for ''
+        mount_info['applicable_users'] = list(filter(None, mount_info['applicable_users'].split(', ')))
+        mount_info['applicable_groups'] = list(filter(None, mount_info['applicable_groups'].split(', ')))
+
+        # the options and configuration fields are returned as string with comma separeted `key: val` fields
+        # (note the options field is returned in this format even with -i active)
         options = {}
         for option in mount_info['options'].split(', '):
             (key, val) = option.split(':')
