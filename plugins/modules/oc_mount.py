@@ -249,10 +249,12 @@ name:
 # map authentication backend name to its ownCloud identifier
 authentication_backends = {
     'sessioncredentials': {
+        'name': 'Log-in credentials, save in session',
         'identifier': 'password::sessioncredentials',
         'configuration': {}
     },
     'password': {
+        'name': 'Username and password',
         'identifier': 'password::password',
         'configuration': {
             'authentication_user': 'user',
@@ -260,6 +262,7 @@ authentication_backends = {
         }
     },
     'oauth2': {
+        'name': 'OAuth2',
         'identifier': 'oauth2::oauth2',
         'configuration': {
             'oauth2_client_id': 'client_id',
@@ -267,6 +270,7 @@ authentication_backends = {
         }
     },
     'publickey': {
+        'name': 'RSA public key',
         'identifier': 'publickey::rsa',
         'configuration': {
             'authentication_user': 'user',
@@ -274,6 +278,7 @@ authentication_backends = {
         }
     },
     'none': {
+      'name': 'None',
       'identifier': 'null::null',
       'configuration': {}
     }
@@ -313,7 +318,7 @@ storage_backends = {
         ]
     },
     'smb': {
-        'name': 'SMB \/ CIFS',
+        'name': 'SMB / CIFS',
         'identifier': 'smb',
         'configuration': 'smb_config',
         'storage_class': '\\OCA\\Files_External\\Lib\\Storage\\SMB',
@@ -344,8 +349,7 @@ storage_backends = {
 
 def _get_mount_info(occ, module, chdir, name, user):
     cmd = [occ] + ['files_external:list', '--no-warnings', '--full',
-                   '-i', '--mount-options',
-                   '--show-password', '--output', 'json']
+                   '--mount-options', '--show-password', '--output', 'json']
 
     if user is not None:
         cmd += [user]
@@ -373,14 +377,28 @@ def _get_mount_info(occ, module, chdir, name, user):
         module.warn('Multiple mounts with name (mount_point) "%s" found! Using the mount with mount_id: %d' % (
             name, mount_info['mount_id']))
 
-    # the options field is returned as string with comma separeted `key: val` fields
-    # so we have to convert it manually
+    # older owncloud versions do not support the -i option (importable format) for the occ files_external:list command
+    # so we have to do some parsing to convert the output to more useful types
+
+    # convert group and user comma seperated lists to actual lists
+    # we need to strip empty strings since split returns [''] for ''
+    mount_info['applicable_users'] = list(filter(None, mount_info['applicable_users'].split(', ')))
+    mount_info['applicable_groups'] = list(filter(None, mount_info['applicable_groups'].split(', ')))
+
+    # the options and configuration fields are returned as string with comma separeted `key: val` fields
+    # (note the options field is returned in this format even with -i active)
     if mount_info is not None:
         options = {}
         for option in mount_info['options'].split(', '):
             (key, val) = option.split(':')
             options[key] = json.loads(val)
         mount_info['options'] = options
+
+        configs = {}
+        for config in mount_info['configuration'].split(', '):
+            (key, val) = config.split(':')
+            configs[key] = json.loads(val)
+        mount_info['configuration'] = configs
 
     return mount_info
 
@@ -456,7 +474,7 @@ def _update_mount(occ, module, chdir, storage_backend, authentication_backend, m
 
     # if we currently have a mount on the given mount point
     # we have to check if it using the same backends if not we have to delete it and re-add it.
-    if mount_info and (storage_backend['storage_class'] != mount_info['storage'] or authentication_backend['identifier'] != mount_info['authentication_type']):
+    if mount_info and (storage_backend['name'] != mount_info['storage'] or authentication_backend['name'] != mount_info['authentication_type']):
         (changed, commands, _, out, err) = _remove_mount(occ, module,
                                                          chdir, storage_backend, authentication_backend, mount_info)
         # set mount to non existant after delete
