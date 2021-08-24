@@ -1,3 +1,4 @@
-# Ansible Collection - ait.owncloud
+# Ansible Collection ait.owncloud
 
-Documentation for the collection.
+Ansible  roles and modules for configuring ownCloud installations.
+Create and configure users and groups, mountpoint and deploy files.
