@@ -1,6 +1,4 @@
 ---
-# tasks file for owncloud-config
-
 - name: Configure owncloud user groups
   ait.owncloud.oc_group:
     name: "{{ item.group }}"
@@ -51,10 +49,10 @@
     # oauth2 authentication backend config
     oauth2_client_id: "{{ item.oauth2_client_id | default(omit) }}"
     oauth2_client_secret: "{{ item.oauth2_client_secret | default(omit) }}"
-    # rsa private key 
+    # rsa private key
     private_key: "{{ item.private_key | default(omit) }}"
     # mount owncloud options (e.g., sharing)
-    options: "{{ ( owncloud_mount_options | combine(item.get('options', {})) ) if owncloud_mount_options is defined else item.options | default(omit) }}"
+    options: "{{ (owncloud_mount_options | combine(item.get('options', {}))) if owncloud_mount_options is defined else item.options | default(omit) }}"
     # executable configuration
     chdir: "{{ (item.chdir | default(owncloud_chdir)) | default(omit) }}"
     executable: "{{ (item.executable | default(owncloud_executable)) | default(omit) }}"

@@ -50,7 +50,7 @@ options:
     type: list
   password:
     description:
-      - The password to set when the user is created. (Use C(force_password) if you want to change the password of an existing user) 
+      - The password to set when the user is created. (Use C(force_password) if you want to change the password of an existing user)
     type: str
   force_password:
     description:
@@ -125,7 +125,7 @@ def _get_group_modifications(occ, module, chdir, name, groups, user_info):
   # add all groups that are not yet assigned to the user
   add_groups = target_groups - current_groups
   # remove all groups they are currently assigned to that are not part of the new group list
-  remove_groups = current_groups - target_groups  
+  remove_groups = current_groups - target_groups
   # create all new groups that do not exist on the system
   create_groups = add_groups - existing_groups
 
@@ -136,7 +136,7 @@ def _get_user_info(occ, module, chdir, name):
     err = ''
     out = ''
 
-    cmd = [occ] + ['user:list', '--no-warnings', '--output', 'json', "-a", "uid", "-a", "displayName", "-a", "email", "-a", "enabled", name]
+    cmd = [occ] + ['user:list', '--no-warnings', '--output', 'json', "-a", "uid", "-a", "displayName", "-a", "email", "-a", "enabled"]
     rc, out_occ, err_occ = module.run_command(cmd, cwd=chdir)
     out += out_occ
     err += err_occ
@@ -147,7 +147,7 @@ def _get_user_info(occ, module, chdir, name):
         _fail(module, cmd, out, err)
 
     module.log(msg=out_occ)
-    
+
     # nothing was returned with our search time
     if type(json_out) == list:
         return {}
@@ -164,43 +164,45 @@ def _get_user_info(occ, module, chdir, name):
 
       if rc != 0:
           _fail(module, cmd, out, err)
-      
+
       user_groups = json.loads(out_occ)
       user_info['groups'] = user_groups
 
     return user_info
 
 def _get_occ(module, executable=None):
-    candidate_occ_basenames = ('occ',)
-    occ = None
-    if executable is not None:
-        if os.path.isabs(executable):
-            occ = executable
-        else:
-            candidate_occ_basenames = (executable,)
+  occ = None
+  candidate_occ_basenames = ('occ',)
+  if executable is not None:
+      if os.path.isabs(executable):
+          occ = executable
+      else:
+          candidate_occ_basenames = (executable,)
 
-    if occ is None:
-        for basename in candidate_occ_basenames:
-            occ = module.get_bin_path(basename, False, opt_dirs=['/usr/local/bin'])
-            if occ is not None:
-                break
-        else:
-            # For-else: Means that we did not break out of the loop
-            # (therefore, that occ was not found)
-            module.fail_json(msg='Unable to find any of %s to use. occ'
-                                 ' needs to be installed.' % ', '.join(candidate_occ_basenames))
+  if occ is None:
+    for basename in candidate_occ_basenames:
+      occ = module.get_bin_path(basename, False, opt_dirs=['/usr/local/bin'])
+      if occ is not None:
+          break
+    else:
+      # For-else: Means that we did not break out of the loop
+      # (therefore, that occ was not found)
+      module.fail_json(
+          msg=
+          f"Unable to find any of {', '.join(candidate_occ_basenames)} to use. occ needs to be installed."
+      )
 
-    return occ
+  return occ
 
 
 
 def _fail(module, cmd, out, err):
-    msg = ''
-    if out:
-        msg += "stdout: %s" % (out, )
-    if err:
-        msg += "\n:stderr: %s" % (err, )
-    module.fail_json(cmd=cmd, msg=msg)
+  msg = ''
+  if out:
+    msg += f"stdout: {out}"
+  if err:
+      msg += "\n:stderr: %s" % (err, )
+  module.fail_json(cmd=cmd, msg=msg)
 
 
 def main():
@@ -264,9 +266,9 @@ def main():
 
     run_cmd = (user_exists and state == "absent") or (not user_exists and state == "present")
     run_modify_display_name = display_name is not None and state == "present" and user_exists and display_name != user_info['displayName']
-    run_modify_email = email is not None and state == "present" and user_exists and email != user_info['email']    
+    run_modify_email = email is not None and state == "present" and user_exists and email != user_info['email']
     run_dis_enable = (user_exists and enable != user_info.get('enabled', False)) or (not user_exists and not enable)
-    
+
     # set add or del command
     commands = []
     user_cmd = [occ] + state_map[state]
@@ -276,7 +278,7 @@ def main():
     group_add_cmd = [occ] + ["group:add-member"]
     group_del_cmd = [occ] + ["group:remove-member"]
     group_create_cmd = [occ] + ["group:add"]
-    
+
 
     if run_cmd:
         cmd_env = dict()
@@ -290,7 +292,7 @@ def main():
               user=name,
               msg=["Password is required to create a new user!"],
             )
-          
+
           if display_name is not None:
             cmd.append("--display-name")
             cmd.append(display_name)
@@ -314,7 +316,7 @@ def main():
             cmd = modify_cmd+["displayname", display_name]
             (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
             changed += out_occ
-        
+
         if run_modify_email:
             cmd = modify_cmd+["email", email]
             (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
@@ -325,7 +327,7 @@ def main():
             (out, err, out_occ, err_occ) = _run_occ_cmd(module, cmd, chdir, out, err, commands)
             changed += name+" has been "
             changed += "enabled\n" if enable else "disabled\n"
-            
+
         if user_exists:
             if force_password:
                 if password is not None:
