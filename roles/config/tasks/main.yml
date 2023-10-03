@@ -3,67 +3,67 @@
 
 - name: Configure owncloud user groups
   ait.owncloud.oc_group:
-      name: "{{ item.group }}"
-      state: "{{ item.state | default(omit) }}"
-      # executable configuration
-      chdir: "{{ (item.chdir | default(owncloud_chdir)) | default(omit) }}"
-      executable: "{{ (item.executable | default(owncloud_executable)) | default(omit)
-          }}"
+    name: "{{ item.group }}"
+    state: "{{ item.state | default(omit) }}"
+    # executable configuration
+    chdir: "{{ (item.chdir | default(owncloud_chdir)) | default(omit) }}"
+    executable: "{{ (item.executable | default(owncloud_executable)) | default(omit)
+      }}"
   loop: "{{ owncloud_groups }}"
   register: occ_output
-  failed_when: "'already exists' not in occ_output.msg"
+  failed_when: "occ_output.msg is defined and 'already exists' not in occ_output.msg"
   tags: [owncloud, groups, config]
 
 - name: Configure owncloud users
   ait.owncloud.oc_user:
-      state: "{{ item.state | default(omit) }}"
-      name: "{{ item.user }}"
-      password: "{{ item.password | default(omit) }}"
-      enabled: "{{ item.enabled | default(True) }}"
-      display_name: "{{ item.display_name | default(omit) }}"
-      email: "{{ item.email | default(omit) }}"
-      groups: "{{ item.groups | default(omit) }}"
-      # if enabled user password is always set, if not password is only set on user creation
-      force_password: "{{ item.force_password | default(owncloud_users_force_password) }}"
-      # executable configuration
-      chdir: "{{ (item.chdir | default(owncloud_chdir)) | default(omit) }}"
-      executable: "{{ (item.executable | default(owncloud_executable)) | default(omit)
-          }}"
+    state: "{{ item.state | default(omit) }}"
+    name: "{{ item.user }}"
+    password: "{{ item.password | default(omit) }}"
+    enabled: "{{ item.enabled | default(True) }}"
+    display_name: "{{ item.display_name | default(omit) }}"
+    email: "{{ item.email | default(omit) }}"
+    groups: "{{ item.groups | default(omit) }}"
+    # if enabled user password is always set, if not password is only set on user creation
+    force_password: "{{ item.force_password | default(owncloud_users_force_password) }}"
+    # executable configuration
+    chdir: "{{ (item.chdir | default(owncloud_chdir)) | default(omit) }}"
+    executable: "{{ (item.executable | default(owncloud_executable)) | default(omit)
+      }}"
   loop: "{{ owncloud_users }}"
   tags: [owncloud, users, config]
 
 - name: Configure owncloud remote filesystem mounts
   ait.owncloud.oc_mount:
-      state: "{{ item.state | default(omit) }}"
-      name: "{{ item.mount_point }}"
-      # access configuration user is mutally exclusive with users and groups (user mount vs admin mount)
-      user: "{{ (item.user | default(omit)) if item.users is not defined and
-          item.groups is not defined else omit }}"
-      users: "{{ item.users | default(omit) }}"
-      groups: "{{ item.groups | default(omit) }}"
-      # backend configuration
-      authentication_backend: "{{ item.authentication_backend }}"
-      storage_backend: "{{ item.storage_backend }}"
-      # mount backend configuration options
-      dav_config: "{{ item.dav_config | default(omit) }}"
-      owncloud_config: "{{ item.owncloud_config | default(omit) }}"
-      sftp_config: "{{ item.sftp_config | default(omit) }}"
-      smb_config: "{{ item.smb_config | default(omit) }}"
-      local_config: "{{ item.local_config | default(omit) }}"
-      # auth user/password for password/publickey auth
-      authentication_user: "{{ item.authentication_user | default(omit) }}"
-      authentication_password: "{{ item.authentication_password | default(omit) }}"
-      # oauth2 authentication backend config
-      oauth2_client_id: "{{ item.oauth2_client_id | default(omit) }}"
-      oauth2_client_secret: "{{ item.oauth2_client_secret | default(omit) }}"
-      # rsa private key
-      private_key: "{{ item.private_key | default(omit) }}"
-      # mount owncloud options (e.g., sharing)
-      options: "{{ ( owncloud_mount_options | combine(item.get('options', {})) ) if
-          owncloud_mount_options is defined else item.options | default(omit) }}"
-      # executable configuration
-      chdir: "{{ (item.chdir | default(owncloud_chdir)) | default(omit) }}"
-      executable: "{{ (item.executable | default(owncloud_executable)) | default(omit)
-          }}"
+    state: "{{ item.state | default(omit) }}"
+    name: "{{ item.mount_point }}"
+    # access configuration user is mutally exclusive with users and groups (user mount vs admin mount)
+    user: "{{ (item.user | default(omit)) if item.users is not defined and
+      item.groups is not defined else omit }}"
+    users: "{{ item.users | default(omit) }}"
+    groups: "{{ item.groups | default(omit) }}"
+    # backend configuration
+    authentication_backend: "{{ item.authentication_backend }}"
+    storage_backend: "{{ item.storage_backend }}"
+    # mount backend configuration options
+    dav_config: "{{ item.dav_config | default(omit) }}"
+    owncloud_config: "{{ item.owncloud_config | default(omit) }}"
+    sftp_config: "{{ item.sftp_config | default(omit) }}"
+    smb_config: "{{ item.smb_config | default(omit) }}"
+    local_config: "{{ item.local_config | default(omit) }}"
+    # auth user/password for password/publickey auth
+    authentication_user: "{{ item.authentication_user | default(omit) }}"
+    authentication_password: "{{ item.authentication_password | default(omit) }}"
+    # oauth2 authentication backend config
+    oauth2_client_id: "{{ item.oauth2_client_id | default(omit) }}"
+    oauth2_client_secret: "{{ item.oauth2_client_secret | default(omit) }}"
+    # rsa private key
+    private_key: "{{ item.private_key | default(omit) }}"
+    # mount owncloud options (e.g., sharing)
+    options: "{{ ( owncloud_mount_options | combine(item.get('options', {})) ) if
+      owncloud_mount_options is defined else item.options | default(omit) }}"
+    # executable configuration
+    chdir: "{{ (item.chdir | default(owncloud_chdir)) | default(omit) }}"
+    executable: "{{ (item.executable | default(owncloud_executable)) | default(omit)
+      }}"
   loop: "{{ owncloud_mounts }}"
   tags: [owncloud, mounts, config]
